@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+        matrix:
+          platform: [ubuntu-latest]
+          node-version: [18.x]
+
+    runs-on: ${{ matrix.platform }}
+    name: "${{ matrix.platform }} ${{ matrix.node-version }}"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+      - name: Run test
+        run: yarn test
