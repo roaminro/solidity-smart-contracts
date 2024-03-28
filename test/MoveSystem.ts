@@ -6,7 +6,7 @@ import {
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import hre from "hardhat";
-import { MapSystem } from "../typechain-types";
+import { MoveSystem } from "../typechain-types";
 
 const DEPLOYER_ADDRESS = "0xBBD7180eabD117dc223Dc772806efedf3a2116F1";
 const GAME_REGISTRY_ADDRESS = "0x418cf1bab316644e515b67befb4e4e99c7eb5604";
@@ -35,19 +35,19 @@ describe("Lock", function () {
     );
 
     // deploy map system
-    const MapSystem = await hre.ethers.getContractFactory(
-      "MapSystem",
+    const MoveSystem = await hre.ethers.getContractFactory(
+      "MoveSystem",
       deployer
     );
 
-    const mapSystem = (await hre.upgrades.deployProxy(MapSystem, [
+    const moveSystem = (await hre.upgrades.deployProxy(MoveSystem, [
       GAME_REGISTRY_ADDRESS,
-    ])) as unknown as MapSystem;
+    ])) as unknown as MoveSystem;
 
-    await mapSystem.waitForDeployment();
+    await moveSystem.waitForDeployment();
 
-    const trackSystemAddress = await mapSystem.getAddress();
-    const trackSystemId = await mapSystem.getId();
+    const trackSystemAddress = await moveSystem.getAddress();
+    const trackSystemId = await moveSystem.getId();
     console.log("trackSystemAddress", trackSystemAddress);
     console.log("trackSystemId", trackSystemId.toString(16));
 
@@ -85,24 +85,24 @@ describe("Lock", function () {
       .registerComponent(position2dComponentId, position2dComponentAddress);
     await t.wait();
 
-    return { mapSystem, gameRegistry, deployer, acc1 };
+    return { moveSystem, gameRegistry, deployer, acc1 };
   }
 
   describe("Deployment", function () {
     it("Should deploy and register system and component", async function () {
-      const { mapSystem } = await loadFixture(deployFixture);
+      const { moveSystem } = await loadFixture(deployFixture);
 
-      expect(await mapSystem.paused()).to.equal(true);
+      expect(await moveSystem.paused()).to.equal(true);
     });
   });
 
   describe("Position", function () {
     it("Should set/get a position", async function () {
-      const { mapSystem, acc1 } = await loadFixture(deployFixture);
+      const { moveSystem, acc1 } = await loadFixture(deployFixture);
 
-      await mapSystem.connect(acc1).setPosition(2, 3);
+      await moveSystem.connect(acc1).setPosition(2, 3);
 
-      const position = await mapSystem.getPosition(acc1);
+      const position = await moveSystem.getPosition(acc1);
       expect(position.x).to.eq(2n);
       expect(position.y).to.eq(3n);
     });
