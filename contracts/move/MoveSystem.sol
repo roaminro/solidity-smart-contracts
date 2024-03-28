@@ -33,7 +33,7 @@ contract MoveSystem is GameRegistryConsumerUpgradeable {
             );
     }
 
-    function setPosition(int64 x, int64 y) external {
+    function setPosition(int32 x, int32 y) external {
         address account = _getPlayerAccount(_msgSender());
 
         Position2DComponent positionComponent = _getPosition2DComponent();
@@ -47,7 +47,7 @@ contract MoveSystem is GameRegistryConsumerUpgradeable {
 
     function getPosition(
         address account
-    ) external view returns (int64 x, int64 y) {
+    ) external view returns (int32 x, int32 y) {
         uint256 entity = EntityLibrary.addressToEntity(account);
 
         Position2DComponent positionComponent = _getPosition2DComponent();

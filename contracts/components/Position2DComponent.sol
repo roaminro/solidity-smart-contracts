@@ -11,8 +11,8 @@ uint256 constant ID = uint256(
 );
 
 struct Layout {
-    int64 x;
-    int64 y;
+    int32 x;
+    int32 y;
 }
 
 library Position2DComponentStorage {
@@ -64,11 +64,11 @@ contract Position2DComponent is BaseStorageComponentV2 {
 
         // X axis location
         keys[0] = "x";
-        values[0] = TypesLibrary.SchemaValue.INT64;
+        values[0] = TypesLibrary.SchemaValue.INT32;
 
         // Y axis location
         keys[1] = "y";
-        values[1] = TypesLibrary.SchemaValue.INT64;
+        values[1] = TypesLibrary.SchemaValue.INT32;
     }
 
     /**
@@ -93,8 +93,8 @@ contract Position2DComponent is BaseStorageComponentV2 {
      */
     function setValue(
         uint256 entity,
-        int64 x,
-        int64 y
+        int32 x,
+        int32 y
     ) external virtual onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
         _setValue(entity, Layout(x, y));
     }
@@ -146,12 +146,12 @@ contract Position2DComponent is BaseStorageComponentV2 {
      */
     function getValue(
         uint256 entity
-    ) external view virtual returns (int64 x, int64 y) {
+    ) external view virtual returns (int32 x, int32 y) {
         if (has(entity)) {
             Layout memory s = Position2DComponentStorage
                 .layout()
                 .entityIdToStruct[entity];
-            (x, y) = abi.decode(_getEncodedValues(s), (int64, int64));
+            (x, y) = abi.decode(_getEncodedValues(s), (int32, int32));
         }
     }
 
@@ -200,7 +200,7 @@ contract Position2DComponent is BaseStorageComponentV2 {
         Layout memory s = Position2DComponentStorage.layout().entityIdToStruct[
             entity
         ];
-        (s.x, s.y) = abi.decode(value, (int64, int64));
+        (s.x, s.y) = abi.decode(value, (int32, int32));
         _setValueToStorage(entity, s);
 
         // ABI Encode all native types of the struct
@@ -224,7 +224,7 @@ contract Position2DComponent is BaseStorageComponentV2 {
             Layout memory s = Position2DComponentStorage
                 .layout()
                 .entityIdToStruct[entities[i]];
-            (s.x, s.y) = abi.decode(values[i], (int64, int64));
+            (s.x, s.y) = abi.decode(values[i], (int32, int32));
             _setValueToStorage(entities[i], s);
         }
         // ABI Encode all native types of the struct
