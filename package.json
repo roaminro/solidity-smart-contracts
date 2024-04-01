@@ -1,5 +1,7 @@
 {
   "name": "hardhat-project",
+  "author": "Roamin Ro",
+  "repository": "https://github.com/roaminro/solidity-smart-contracts",
   "scripts": {
     "test": "npx hardhat test"
   },
