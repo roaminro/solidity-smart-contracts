@@ -1,7 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
-import '@typechain/hardhat';
+import "@typechain/hardhat";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -14,13 +14,11 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    hardhat: {
-      forking:{
-        url: "https://rpc.apex.proofofplay.com",
-        blockNumber: 2403280,
-      }
+    hardhat: {},
+    apex: {
+      url: "https://rpc.apex.proofofplay.com",
     },
-  }
+  },
 };
 
 export default config;

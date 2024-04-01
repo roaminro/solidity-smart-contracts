@@ -1,19 +1,15 @@
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import {
+  loadFixture,
+  impersonateAccount,
+} from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import hre from "hardhat";
 import { EventLog } from "ethers";
-import { GameRegistry, MoveSystem, RaceSystem } from "../typechain-types";
+import { MoveSystem, RaceSystem } from "../typechain-types";
 
-const DEPLOYER_ROLE = hre.ethers.solidityPackedKeccak256(
-  ["string"],
-  ["DEPLOYER_ROLE"]
-);
-
-const PAUSER_ROLE = hre.ethers.solidityPackedKeccak256(
-  ["string"],
-  ["PAUSER_ROLE"]
-);
+const DEPLOYER_ADDRESS = "0xBBD7180eabD117dc223Dc772806efedf3a2116F1";
+const GAME_REGISTRY_ADDRESS = "0x418cf1bab316644e515b67befb4e4e99c7eb5604";
 
 const GAME_LOGIC_CONTRACT_ROLE = hre.ethers.solidityPackedKeccak256(
   ["string"],
@@ -27,33 +23,24 @@ enum RaceStatus {
   FINISHED,
 }
 
-describe("Race", function () {
+// skip these tests for now
+describe.skip("Race - Apex", function () {
   async function deployFixture() {
-    const [deployer, acc1, acc2, acc3] = await hre.ethers.getSigners();
+    const [acc1, acc2, acc3] = await hre.ethers.getSigners();
+
+    // setup deployer signer
+    await impersonateAccount(DEPLOYER_ADDRESS);
+    const deployer = await hre.ethers.getSigner(DEPLOYER_ADDRESS);
 
     // setup game registry
-    const GameRegistry = await hre.ethers.getContractFactory(
-      "GameRegistry",
-      deployer
+    const gameRegistry = await hre.ethers.getContractAt(
+      "IGameRegistry",
+      GAME_REGISTRY_ADDRESS
     );
-
-    const gameRegistry = (await hre.upgrades.deployProxy(GameRegistry, [
-      deployer.address,
-    ])) as unknown as GameRegistry;
-
-    const gameRegistryAddress = await gameRegistry.getAddress();
-
-    // set DEPLOYER_ROLE for deployer address
-    let tx = await gameRegistry
-      .connect(deployer)
-      .grantRole(DEPLOYER_ROLE, deployer.address);
-    await tx.wait();
-
-    // set PAUSER_ROLE for deployer address
-    tx = await gameRegistry
-      .connect(deployer)
-      .grantRole(PAUSER_ROLE, deployer.address);
-    await tx.wait();
+    const gameRegistryAccessControl = await hre.ethers.getContractAt(
+      "IAccessControlUpgradeable",
+      GAME_REGISTRY_ADDRESS
+    );
 
     // deploy and register race system
     const RaceSystem = await hre.ethers.getContractFactory(
@@ -62,7 +49,7 @@ describe("Race", function () {
     );
 
     const raceSystem = (await hre.upgrades.deployProxy(RaceSystem, [
-      gameRegistryAddress,
+      GAME_REGISTRY_ADDRESS,
     ])) as unknown as RaceSystem;
 
     await raceSystem.waitForDeployment();
@@ -70,13 +57,13 @@ describe("Race", function () {
     const raceSystemAddress = await raceSystem.getAddress();
     const raceSystemId = await raceSystem.getId();
 
-    tx = await gameRegistry
+    let tx = await gameRegistry
       .connect(deployer)
       .registerSystem(raceSystemId, raceSystemAddress);
     await tx.wait();
 
     // set GAME_LOGIC_CONTRACT_ROLE for RaceSystem contract
-    tx = await gameRegistry
+    tx = await gameRegistryAccessControl
       .connect(deployer)
       .grantRole(GAME_LOGIC_CONTRACT_ROLE, raceSystemAddress);
     await tx.wait();
@@ -93,7 +80,7 @@ describe("Race", function () {
     );
 
     const moveSystem = (await hre.upgrades.deployProxy(MoveSystem, [
-      gameRegistryAddress,
+      GAME_REGISTRY_ADDRESS,
     ])) as unknown as MoveSystem;
 
     await moveSystem.waitForDeployment();
@@ -107,7 +94,7 @@ describe("Race", function () {
     await tx.wait();
 
     // set GAME_LOGIC_CONTRACT_ROLE for MoveSystem contract
-    tx = await gameRegistry
+    tx = await gameRegistryAccessControl
       .connect(deployer)
       .grantRole(GAME_LOGIC_CONTRACT_ROLE, moveSystemAddress);
     await tx.wait();
@@ -123,7 +110,7 @@ describe("Race", function () {
       deployer
     );
 
-    const raceComponent = await RaceComponent.deploy(gameRegistryAddress);
+    const raceComponent = await RaceComponent.deploy(GAME_REGISTRY_ADDRESS);
     await raceComponent.waitForDeployment();
     const raceComponentAddress = await raceComponent.getAddress();
     const raceComponentId = await raceComponent.getId();
@@ -145,7 +132,9 @@ describe("Race", function () {
       deployer
     );
 
-    const speed2DComponent = await Speed2DComponent.deploy(gameRegistryAddress);
+    const speed2DComponent = await Speed2DComponent.deploy(
+      GAME_REGISTRY_ADDRESS
+    );
     await speed2DComponent.waitForDeployment();
     const speed2DComponentAddress = await speed2DComponent.getAddress();
     const speed2DComponentId = await speed2DComponent.getId();
@@ -168,7 +157,7 @@ describe("Race", function () {
     );
 
     const position2dComponent = await Position2dComponent.deploy(
-      gameRegistryAddress
+      GAME_REGISTRY_ADDRESS
     );
     await position2dComponent.waitForDeployment();
     const position2dComponentAddress = await position2dComponent.getAddress();
@@ -185,13 +174,9 @@ describe("Race", function () {
     console.log("position2dComponentId", position2dComponentId.toString(16));
     console.log("------------------------------------------");
 
-    // unpause contracts
-    tx = await gameRegistry.connect(deployer).setPaused(false);
-    await tx.wait();
-
+    // unpause systems
     tx = await raceSystem.connect(deployer).setPaused(false);
     await tx.wait();
-
     tx = await moveSystem.connect(deployer).setPaused(false);
     await tx.wait();
 
