@@ -7,15 +7,15 @@ import {BaseStorageComponentV2, IBaseStorageComponentV2} from "../core/component
 import {GAME_LOGIC_CONTRACT_ROLE} from "../Constants.sol";
 
 uint256 constant ID = uint256(
-    keccak256("game.racing.position2dcomponent.v1")
+    keccak256("game.racing.speed2dcomponent.v1")
 );
 
 struct Layout {
-    int32 x;
-    int32 y;
+    int32 vx;
+    int32 vy;
 }
 
-library Position2DComponentStorage {
+library Speed2DComponentStorage {
     bytes32 internal constant STORAGE_SLOT = bytes32(ID);
 
     // Declare struct for mapping entity to struct
@@ -37,10 +37,10 @@ library Position2DComponentStorage {
 }
 
 /**
- * @title Position2DComponent
- * @dev Position 2D Component
+ * @title Speed2DComponent
+ * @dev Speed 2D Component
  */
-contract Position2DComponent is BaseStorageComponentV2 {
+contract Speed2DComponent is BaseStorageComponentV2 {
     /** SETUP **/
 
     /** Sets the GameRegistry contract address for this contract  */
@@ -62,12 +62,12 @@ contract Position2DComponent is BaseStorageComponentV2 {
         keys = new string[](2);
         values = new TypesLibrary.SchemaValue[](2);
 
-        // X axis location
-        keys[0] = "x";
+        // X axis speed
+        keys[0] = "vx";
         values[0] = TypesLibrary.SchemaValue.INT32;
 
-        // Y axis location
-        keys[1] = "y";
+        // Y axis speed
+        keys[1] = "vy";
         values[1] = TypesLibrary.SchemaValue.INT32;
     }
 
@@ -88,15 +88,15 @@ contract Position2DComponent is BaseStorageComponentV2 {
      * Sets the native value for this component
      *
      * @param entity Entity to get value for
-     * @param x X axis location
-     * @param y Y axis location
+     * @param vx X axis speed
+     * @param vy Y axis speed
      */
     function setValue(
         uint256 entity,
-        int32 x,
-        int32 y
+        int32 vx,
+        int32 vy
     ) external virtual onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
-        _setValue(entity, Layout(x, y));
+        _setValue(entity, Layout(vx, vy));
     }
 
     /**
@@ -134,24 +134,24 @@ contract Position2DComponent is BaseStorageComponentV2 {
         uint256 entity
     ) external view virtual returns (Layout memory value) {
         // Get the struct from storage
-        value = Position2DComponentStorage.layout().entityIdToStruct[entity];
+        value = Speed2DComponentStorage.layout().entityIdToStruct[entity];
     }
 
     /**
      * Returns the native values for this component
      *
      * @param entity Entity to get value for
-     * @return x X axis location
-     * @return y Y axis location
+     * @return vx X axis speed
+     * @return vy Y axis speed
      */
     function getValue(
         uint256 entity
-    ) external view virtual returns (int32 x, int32 y) {
+    ) external view virtual returns (int32 vx, int32 vy) {
         if (has(entity)) {
-            Layout memory s = Position2DComponentStorage
+            Layout memory s = Speed2DComponentStorage
                 .layout()
                 .entityIdToStruct[entity];
-            (x, y) = abi.decode(_getEncodedValues(s), (int32, int32));
+            (vx, vy) = abi.decode(_getEncodedValues(s), (int32, int32));
         }
     }
 
@@ -164,14 +164,14 @@ contract Position2DComponent is BaseStorageComponentV2 {
         uint256 entity
     ) external view virtual returns (bytes[] memory values) {
         // Get the struct from storage
-        Layout storage s = Position2DComponentStorage.layout().entityIdToStruct[
+        Layout storage s = Speed2DComponentStorage.layout().entityIdToStruct[
             entity
         ];
 
         // ABI Encode all fields of the struct and add to values array
         values = new bytes[](2);
-        values[0] = abi.encode(s.x);
-        values[1] = abi.encode(s.y);
+        values[0] = abi.encode(s.vx);
+        values[1] = abi.encode(s.vy);
     }
 
     /**
@@ -182,7 +182,7 @@ contract Position2DComponent is BaseStorageComponentV2 {
     function getBytes(
         uint256 entity
     ) external view returns (bytes memory value) {
-        Layout memory s = Position2DComponentStorage.layout().entityIdToStruct[
+        Layout memory s = Speed2DComponentStorage.layout().entityIdToStruct[
             entity
         ];
         value = _getEncodedValues(s);
@@ -197,10 +197,10 @@ contract Position2DComponent is BaseStorageComponentV2 {
         uint256 entity,
         bytes calldata value
     ) external onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
-        Layout memory s = Position2DComponentStorage.layout().entityIdToStruct[
+        Layout memory s = Speed2DComponentStorage.layout().entityIdToStruct[
             entity
         ];
-        (s.x, s.y) = abi.decode(value, (int32, int32));
+        (s.vx, s.vy) = abi.decode(value, (int32, int32));
         _setValueToStorage(entity, s);
 
         // ABI Encode all native types of the struct
@@ -221,10 +221,10 @@ contract Position2DComponent is BaseStorageComponentV2 {
             revert InvalidBatchData(entities.length, values.length);
         }
         for (uint256 i = 0; i < entities.length; i++) {
-            Layout memory s = Position2DComponentStorage
+            Layout memory s = Speed2DComponentStorage
                 .layout()
                 .entityIdToStruct[entities[i]];
-            (s.x, s.y) = abi.decode(values[i], (int32, int32));
+            (s.vx, s.vy) = abi.decode(values[i], (int32, int32));
             _setValueToStorage(entities[i], s);
         }
         // ABI Encode all native types of the struct
@@ -240,7 +240,7 @@ contract Position2DComponent is BaseStorageComponentV2 {
         uint256 entity
     ) public virtual onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
         // Remove the entity from the component
-        delete Position2DComponentStorage.layout().entityIdToStruct[entity];
+        delete Speed2DComponentStorage.layout().entityIdToStruct[entity];
         _emitRemoveBytes(entity);
     }
 
@@ -254,7 +254,7 @@ contract Position2DComponent is BaseStorageComponentV2 {
     ) public virtual onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
         // Remove the entities from the component
         for (uint256 i = 0; i < entities.length; i++) {
-            delete Position2DComponentStorage.layout().entityIdToStruct[
+            delete Speed2DComponentStorage.layout().entityIdToStruct[
                 entities[i]
             ];
         }
@@ -273,24 +273,24 @@ contract Position2DComponent is BaseStorageComponentV2 {
     /** INTERNAL **/
 
     function _setValueToStorage(uint256 entity, Layout memory value) internal {
-        Layout storage s = Position2DComponentStorage.layout().entityIdToStruct[
+        Layout storage s = Speed2DComponentStorage.layout().entityIdToStruct[
             entity
         ];
 
-        s.x = value.x;
-        s.y = value.y;
+        s.vx = value.vx;
+        s.vy = value.vy;
     }
 
     function _setValue(uint256 entity, Layout memory value) internal {
         _setValueToStorage(entity, value);
 
         // ABI Encode all native types of the struct
-        _emitSetBytes(entity, abi.encode(value.x, value.y));
+        _emitSetBytes(entity, abi.encode(value.vx, value.vy));
     }
 
     function _getEncodedValues(
         Layout memory value
     ) internal pure returns (bytes memory) {
-        return abi.encode(value.x, value.y);
+        return abi.encode(value.vx, value.vy);
     }
 }
