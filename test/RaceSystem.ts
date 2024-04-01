@@ -161,6 +161,28 @@ describe("Race", function () {
     console.log("speed2DComponentId", speed2DComponentId.toString(16));
     console.log("------------------------------------------");
 
+    // deploy and register Speed2DComponent component
+    const EnergyComponent = await hre.ethers.getContractFactory(
+      "EnergyComponent",
+      deployer
+    );
+
+    const energyComponent = await EnergyComponent.deploy(gameRegistryAddress);
+    await energyComponent.waitForDeployment();
+    const energyComponentAddress = await energyComponent.getAddress();
+    const energyComponentId = await energyComponent.getId();
+
+    // register EnergyComponent with GameRegistry
+    tx = await gameRegistry
+      .connect(deployer)
+      .registerComponent(energyComponentId, energyComponentAddress);
+    await tx.wait();
+
+    console.log("EnergyComponent deployed and registered");
+    console.log("energyComponentAddress", energyComponentAddress);
+    console.log("energyComponentId", energyComponentId.toString(16));
+    console.log("------------------------------------------");
+
     // deploy and register Position2DComponent component
     const Position2dComponent = await hre.ethers.getContractFactory(
       "Position2DComponent",
@@ -227,7 +249,9 @@ describe("Race", function () {
 
       let [raceID] = event.args;
 
-      let race = await raceSystem.getRace(raceID);
+      let race = await raceSystem.getRace({
+        raceID,
+      });
       expect(race.creator).to.eq(acc1);
       expect(race.status).to.eq(RaceStatus.WAITING_FOR_PLAYERS);
       expect(race.nbPlayersJoined).to.eq(0);
@@ -261,7 +285,9 @@ describe("Race", function () {
 
       expect(tx).to.emit(raceSystem, "PlayerJoined").withArgs(raceID, acc1);
 
-      let race = await raceSystem.getRace(raceID);
+      let race = await raceSystem.getRace({
+        raceID,
+      });
       expect(race.creator).to.eq(acc1);
       expect(race.status).to.eq(RaceStatus.WAITING_FOR_PLAYERS);
       expect(race.nbPlayersJoined).to.eq(1);
@@ -279,7 +305,9 @@ describe("Race", function () {
       expect(tx).to.emit(raceSystem, "PlayerJoined").withArgs(raceID, acc2);
       expect(tx).to.emit(raceSystem, "RaceStarted").withArgs(raceID);
 
-      race = await raceSystem.getRace(raceID);
+      race = await raceSystem.getRace({
+        raceID,
+      });
       expect(race.creator).to.eq(acc1);
       expect(race.status).to.eq(RaceStatus.STARTED);
       expect(race.nbPlayersJoined).to.eq(2);

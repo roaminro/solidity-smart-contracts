@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: MIT LICENSE
-
+// SPDX-License-Identifier: UNKOWN
 pragma solidity ^0.8.9;
 
-import {ID as RACE_SYSTEM_ID, IRaceSystem, CreateRaceParams, JoinRaceParams, RaceStatus} from "./IRaceSystem.sol";
+import {ID as RACE_SYSTEM_ID, IRaceSystem, CreateRaceParams, JoinRaceParams, GetRaceParams, GetPlayerInfoParams, RaceStatus} from "./IRaceSystem.sol";
 import {RaceComponent, ID as RACE_COMPONENT_ID, Layout as Race} from "../components/RaceComponent.sol";
 import {Position2DComponent, ID as POSITION2D_COMPONENT_ID, Layout as Position} from "../components/Position2DComponent.sol";
+import {Speed2DComponent, ID as SPEED2D_COMPONENT_ID} from "../components/Speed2DComponent.sol";
+import {EnergyComponent, ID as ENERGY_COMPONENT_ID} from "../components/EnergyComponent.sol";
 import "../GameRegistryConsumerUpgradeable.sol";
 import {RaceLibrary} from "./RaceLibrary.sol";
 
@@ -43,6 +44,28 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
         return
             Position2DComponent(
                 _gameRegistry.getComponent(POSITION2D_COMPONENT_ID)
+            );
+    }
+
+    function _getSpeed2DComponent()
+        internal
+        view
+        returns (Speed2DComponent)
+    {
+        return
+            Speed2DComponent(
+                _gameRegistry.getComponent(SPEED2D_COMPONENT_ID)
+            );
+    }
+
+    function _getEnergyComponent()
+        internal
+        view
+        returns (EnergyComponent)
+    {
+        return
+            EnergyComponent(
+                _gameRegistry.getComponent(ENERGY_COMPONENT_ID)
             );
     }
 
@@ -100,11 +123,22 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
             revert PlayerAlreadyJoined();
         }
 
+        // TODO: use a better way to store default player values
+
         // all players start at position (1,1)
         position.x = 1;
         position.y = 1;
 
         _getPosition2DComponent().setLayoutValue(racePlayerID, position);
+
+        // start with a speed of 0
+        _getSpeed2DComponent().setValue(racePlayerID, 0, 0);
+
+         // start with:
+         // - full energy (10000 = 100.00%)
+         // - 5 seconds energy regeneration time
+        _getEnergyComponent().setValue(racePlayerID, 100_00, 100_00, 0, 5 seconds);
+
         emit PlayerJoined(params.raceID, player);
 
         // update race
@@ -120,7 +154,20 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
         _getRaceComponent().setLayoutValue(params.raceID, race);
     }
 
-    function getRace(uint256 raceID) external view returns (Race memory) {
-        return _getRaceComponent().getLayoutValue(raceID);
+    function getRace(GetRaceParams calldata params) external view returns (Race memory) {
+        return _getRaceComponent().getLayoutValue(params.raceID);
+    }
+
+    function getPlayerInfo(
+        GetPlayerInfoParams calldata params
+    ) external view returns (int32 x, int32 y, int32 vx, int32 vy, uint32 energy) {
+        uint256 racePlayerID = RaceLibrary.getRacePlayerEntity(
+            params.raceID,
+            params.player
+        );
+
+        (x, y) = _getPosition2DComponent().getValue(racePlayerID);
+        (vx, vy) = _getSpeed2DComponent().getValue(racePlayerID);
+        (energy,,,) = _getEnergyComponent().getValue(racePlayerID);
     }
 }

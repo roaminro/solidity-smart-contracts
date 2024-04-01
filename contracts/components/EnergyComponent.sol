@@ -6,16 +6,16 @@ import {TypesLibrary} from "../core/TypesLibrary.sol";
 import {BaseStorageComponentV2, IBaseStorageComponentV2} from "../core/components/BaseStorageComponentV2.sol";
 import {GAME_LOGIC_CONTRACT_ROLE} from "../Constants.sol";
 
-uint256 constant ID = uint256(
-    keccak256("game.racing.position2dcomponent.v1")
-);
+uint256 constant ID = uint256(keccak256("game.racing.energycomponent.v1"));
 
 struct Layout {
-    int32 x;
-    int32 y;
+    uint32 balance;
+    uint32 max;
+    uint32 lastUpdate;
+    uint32 regenerationTime;
 }
 
-library Position2DComponentStorage {
+library EnergyComponentStorage {
     bytes32 internal constant STORAGE_SLOT = bytes32(ID);
 
     // Declare struct for mapping entity to struct
@@ -37,10 +37,10 @@ library Position2DComponentStorage {
 }
 
 /**
- * @title Position2DComponent
- * @dev Position 2D Component
+ * @title EnergyComponent
+ * @dev Energy Component
  */
-contract Position2DComponent is BaseStorageComponentV2 {
+contract EnergyComponent is BaseStorageComponentV2 {
     /** SETUP **/
 
     /** Sets the GameRegistry contract address for this contract  */
@@ -59,16 +59,24 @@ contract Position2DComponent is BaseStorageComponentV2 {
         override
         returns (string[] memory keys, TypesLibrary.SchemaValue[] memory values)
     {
-        keys = new string[](2);
-        values = new TypesLibrary.SchemaValue[](2);
+        keys = new string[](4);
+        values = new TypesLibrary.SchemaValue[](4);
 
-        // X axis location
-        keys[0] = "x";
-        values[0] = TypesLibrary.SchemaValue.INT32;
+        // balance
+        keys[0] = "balance";
+        values[0] = TypesLibrary.SchemaValue.UINT32;
 
-        // Y axis location
-        keys[1] = "y";
-        values[1] = TypesLibrary.SchemaValue.INT32;
+        // max
+        keys[1] = "max";
+        values[1] = TypesLibrary.SchemaValue.UINT32;
+
+        // max
+        keys[2] = "lastUpdate";
+        values[2] = TypesLibrary.SchemaValue.UINT32;
+
+        // max
+        keys[3] = "regenerationTime";
+        values[3] = TypesLibrary.SchemaValue.UINT32;
     }
 
     /**
@@ -88,15 +96,19 @@ contract Position2DComponent is BaseStorageComponentV2 {
      * Sets the native value for this component
      *
      * @param entity Entity to get value for
-     * @param x X axis location
-     * @param y Y axis location
+     * @param balance balance
+     * @param max max
+     * @param lastUpdate lastUpdate
+     * @param regenerationTime regenerationTime
      */
     function setValue(
         uint256 entity,
-        int32 x,
-        int32 y
+        uint32 balance,
+        uint32 max,
+        uint32 lastUpdate,
+        uint32 regenerationTime
     ) external virtual onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
-        _setValue(entity, Layout(x, y));
+        _setValue(entity, Layout(balance, max, lastUpdate, regenerationTime));
     }
 
     /**
@@ -134,24 +146,26 @@ contract Position2DComponent is BaseStorageComponentV2 {
         uint256 entity
     ) external view virtual returns (Layout memory value) {
         // Get the struct from storage
-        value = Position2DComponentStorage.layout().entityIdToStruct[entity];
+        value = EnergyComponentStorage.layout().entityIdToStruct[entity];
     }
 
     /**
      * Returns the native values for this component
      *
      * @param entity Entity to get value for
-     * @return x X axis location
-     * @return y Y axis location
+     * @return balance balance
+     * @return max max
+     * @return lastUpdate lastUpdate
+     * @return regenerationTime regenerationTime
      */
     function getValue(
         uint256 entity
-    ) external view virtual returns (int32 x, int32 y) {
+    ) external view virtual returns (uint32 balance, uint32 max, uint32 lastUpdate, uint32 regenerationTime) {
         if (has(entity)) {
-            Layout memory s = Position2DComponentStorage
-                .layout()
-                .entityIdToStruct[entity];
-            (x, y) = abi.decode(_getEncodedValues(s), (int32, int32));
+            Layout memory s = EnergyComponentStorage.layout().entityIdToStruct[
+                entity
+            ];
+            (balance, max, lastUpdate, regenerationTime) = abi.decode(_getEncodedValues(s), (uint32, uint32, uint32, uint32));
         }
     }
 
@@ -164,14 +178,16 @@ contract Position2DComponent is BaseStorageComponentV2 {
         uint256 entity
     ) external view virtual returns (bytes[] memory values) {
         // Get the struct from storage
-        Layout storage s = Position2DComponentStorage.layout().entityIdToStruct[
+        Layout storage s = EnergyComponentStorage.layout().entityIdToStruct[
             entity
         ];
 
         // ABI Encode all fields of the struct and add to values array
-        values = new bytes[](2);
-        values[0] = abi.encode(s.x);
-        values[1] = abi.encode(s.y);
+        values = new bytes[](4);
+        values[0] = abi.encode(s.balance);
+        values[1] = abi.encode(s.max);
+        values[2] = abi.encode(s.lastUpdate);
+        values[3] = abi.encode(s.regenerationTime);
     }
 
     /**
@@ -182,7 +198,7 @@ contract Position2DComponent is BaseStorageComponentV2 {
     function getBytes(
         uint256 entity
     ) external view returns (bytes memory value) {
-        Layout memory s = Position2DComponentStorage.layout().entityIdToStruct[
+        Layout memory s = EnergyComponentStorage.layout().entityIdToStruct[
             entity
         ];
         value = _getEncodedValues(s);
@@ -197,10 +213,10 @@ contract Position2DComponent is BaseStorageComponentV2 {
         uint256 entity,
         bytes calldata value
     ) external onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
-        Layout memory s = Position2DComponentStorage.layout().entityIdToStruct[
+        Layout memory s = EnergyComponentStorage.layout().entityIdToStruct[
             entity
         ];
-        (s.x, s.y) = abi.decode(value, (int32, int32));
+        (s.balance, s.max, s.lastUpdate, s.regenerationTime) = abi.decode(value, (uint32, uint32, uint32, uint32));
         _setValueToStorage(entity, s);
 
         // ABI Encode all native types of the struct
@@ -221,10 +237,10 @@ contract Position2DComponent is BaseStorageComponentV2 {
             revert InvalidBatchData(entities.length, values.length);
         }
         for (uint256 i = 0; i < entities.length; i++) {
-            Layout memory s = Position2DComponentStorage
-                .layout()
-                .entityIdToStruct[entities[i]];
-            (s.x, s.y) = abi.decode(values[i], (int32, int32));
+            Layout memory s = EnergyComponentStorage.layout().entityIdToStruct[
+                entities[i]
+            ];
+            (s.balance, s.max, s.lastUpdate, s.regenerationTime) = abi.decode(values[i], (uint32, uint32, uint32, uint32));
             _setValueToStorage(entities[i], s);
         }
         // ABI Encode all native types of the struct
@@ -240,7 +256,7 @@ contract Position2DComponent is BaseStorageComponentV2 {
         uint256 entity
     ) public virtual onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
         // Remove the entity from the component
-        delete Position2DComponentStorage.layout().entityIdToStruct[entity];
+        delete EnergyComponentStorage.layout().entityIdToStruct[entity];
         _emitRemoveBytes(entity);
     }
 
@@ -254,7 +270,7 @@ contract Position2DComponent is BaseStorageComponentV2 {
     ) public virtual onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
         // Remove the entities from the component
         for (uint256 i = 0; i < entities.length; i++) {
-            delete Position2DComponentStorage.layout().entityIdToStruct[
+            delete EnergyComponentStorage.layout().entityIdToStruct[
                 entities[i]
             ];
         }
@@ -273,24 +289,26 @@ contract Position2DComponent is BaseStorageComponentV2 {
     /** INTERNAL **/
 
     function _setValueToStorage(uint256 entity, Layout memory value) internal {
-        Layout storage s = Position2DComponentStorage.layout().entityIdToStruct[
+        Layout storage s = EnergyComponentStorage.layout().entityIdToStruct[
             entity
         ];
 
-        s.x = value.x;
-        s.y = value.y;
+        s.balance = value.balance;
+        s.max = value.max;
+        s.lastUpdate = value.lastUpdate;
+        s.regenerationTime = value.regenerationTime;
     }
 
     function _setValue(uint256 entity, Layout memory value) internal {
         _setValueToStorage(entity, value);
 
         // ABI Encode all native types of the struct
-        _emitSetBytes(entity, abi.encode(value.x, value.y));
+        _emitSetBytes(entity, abi.encode(value.balance, value.max, value.lastUpdate, value.regenerationTime));
     }
 
     function _getEncodedValues(
         Layout memory value
     ) internal pure returns (bytes memory) {
-        return abi.encode(value.x, value.y);
+        return abi.encode(value.balance, value.max, value.lastUpdate, value.regenerationTime);
     }
 }

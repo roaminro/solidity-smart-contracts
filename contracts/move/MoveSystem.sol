@@ -1,15 +1,18 @@
-// SPDX-License-Identifier: MIT LICENSE
+// SPDX-License-Identifier: UNKOWN
 
 pragma solidity ^0.8.9;
 
-import {Position2DComponent, ID as POSITION_2D_COMPONENT_ID, Layout as Position} from "../components/Position2DComponent.sol";
-import {Speed2DComponent, ID as SPEED_2D_COMPONENT_ID, Layout as Speed} from "../components/Speed2DComponent.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Position2DComponent, ID as POSITION2D_COMPONENT_ID, Layout as Position} from "../components/Position2DComponent.sol";
+import {Speed2DComponent, ID as SPEED2D_COMPONENT_ID, Layout as Speed} from "../components/Speed2DComponent.sol";
 import {RaceComponent, ID as RACE_COMPONENT_ID, Layout as Race} from "../components/RaceComponent.sol";
+import {EnergyComponent, ID as ENERGY_COMPONENT_ID, Layout as Energy} from "../components/EnergyComponent.sol";
 import {RaceStatus} from "../race/IRaceSystem.sol";
 import {MANAGER_ROLE} from "../Constants.sol";
-import {IMoveSystem, MoveParams, GetPositionParams} from "./IMoveSystem.sol";
+import {IMoveSystem, MoveParams} from "./IMoveSystem.sol";
 import "../GameRegistryConsumerUpgradeable.sol";
 import {RaceLibrary} from "../race/RaceLibrary.sol";
+import {EnergyLibrary} from "../energy/EnergyLibrary.sol";
 
 uint256 constant ID = uint256(keccak256("game.racing.movesystem.v1"));
 
@@ -21,6 +24,7 @@ contract MoveSystem is IMoveSystem, GameRegistryConsumerUpgradeable {
     error InvalidMove();
     error RaceNotStarted();
     error PlayerNotJoined();
+    error NotEnoughEnergy();
 
     /** EVENTS **/
     event PlayerMoved(uint256 indexed raceID, address indexed player);
@@ -41,13 +45,24 @@ contract MoveSystem is IMoveSystem, GameRegistryConsumerUpgradeable {
     {
         return
             Position2DComponent(
-                _gameRegistry.getComponent(POSITION_2D_COMPONENT_ID)
+                _gameRegistry.getComponent(POSITION2D_COMPONENT_ID)
+            );
+    }
+
+    function _getEnergyComponent()
+        internal
+        view
+        returns (EnergyComponent)
+    {
+        return
+            EnergyComponent(
+                _gameRegistry.getComponent(ENERGY_COMPONENT_ID)
             );
     }
 
     function _getSpeed2DComponent() internal view returns (Speed2DComponent) {
         return
-            Speed2DComponent(_gameRegistry.getComponent(SPEED_2D_COMPONENT_ID));
+            Speed2DComponent(_gameRegistry.getComponent(POSITION2D_COMPONENT_ID));
     }
 
     function _getRaceComponent() internal view returns (RaceComponent) {
@@ -90,12 +105,25 @@ contract MoveSystem is IMoveSystem, GameRegistryConsumerUpgradeable {
             racePlayerID
         );
 
-        Speed2DComponent speedComponent = _getSpeed2DComponent();
+        // regenerate energy
+        EnergyComponent energyComponent = _getEnergyComponent();
+        Energy memory energy = energyComponent.getLayoutValue(racePlayerID);
+
+        uint32 timestamp = SafeCast.toUint32(block.timestamp);
+        EnergyLibrary.regenerateEnergy(timestamp, energy);
+        energyComponent.setLayoutValue(racePlayerID, energy);
+
+        // for now, a move requires 100% energy
+        if (energy.balance < 100_00) {
+            revert NotEnoughEnergy();
+        }
 
         // update speed
         // current speed + 1 = acceleration
         // current speed - 1 = deceleration
         // current speed + 0 = keep same speed
+        Speed2DComponent speedComponent = _getSpeed2DComponent();
+
         Speed memory speed = speedComponent.getLayoutValue(racePlayerID);
         speed.vx += params.vx;
         speed.vy += params.vy;
@@ -108,17 +136,5 @@ contract MoveSystem is IMoveSystem, GameRegistryConsumerUpgradeable {
         positionComponent.setLayoutValue(racePlayerID, position);
 
         emit PlayerMoved(params.raceID, player);
-    }
-
-    function getPlayerInfo(
-        GetPositionParams calldata params
-    ) external view returns (int32 x, int32 y, int32 vx, int32 vy) {
-        uint256 racePlayerID = RaceLibrary.getRacePlayerEntity(
-            params.raceID,
-            params.player
-        );
-
-        (x, y) = _getPosition2DComponent().getValue(racePlayerID);
-        (vx, vy) = _getSpeed2DComponent().getValue(racePlayerID);
     }
 }

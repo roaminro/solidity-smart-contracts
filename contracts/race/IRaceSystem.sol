@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT LICENSE
+// SPDX-License-Identifier: UNKOWN
 
 pragma solidity ^0.8.9;
 
@@ -14,6 +14,15 @@ struct JoinRaceParams {
     uint256 raceID;
 }
 
+struct GetRaceParams {
+    uint256 raceID;
+}
+
+struct GetPlayerInfoParams {
+    uint256 raceID;
+    address player;
+}
+
 enum RaceStatus {
     UNDEFINED,
     WAITING_FOR_PLAYERS,
@@ -21,10 +30,14 @@ enum RaceStatus {
     FINISHED
 }
 
-interface IRaceSystem  {
+interface IRaceSystem {
     function createRace(CreateRaceParams calldata params) external;
 
     function joinRace(JoinRaceParams calldata params) external;
 
-    function getRace(uint256 raceID) view external returns (Race memory);
+    function getRace(GetRaceParams calldata params) external view returns (Race memory);
+
+    function getPlayerInfo(
+        GetPlayerInfoParams calldata params
+    ) external returns (int32 x, int32 y, int32 vx, int32 vy, uint32 energy);
 }
