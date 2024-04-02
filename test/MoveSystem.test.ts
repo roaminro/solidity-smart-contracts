@@ -143,9 +143,8 @@ describe("MoveSystem", function () {
   });
 
   it("Should not move a player", async function () {
-    const { raceSystem, moveSystem, acc1, acc2, acc3 } = await loadFixture(
-      deployFixture
-    );
+    const { deployer, raceSystem, moveSystem, acc1, acc2, acc3 } =
+      await loadFixture(deployFixture);
 
     // create race
     let tx = await raceSystem.connect(acc1).createRace({
@@ -245,5 +244,21 @@ describe("MoveSystem", function () {
         vy: 1, // accelerate on y axis
       })
     ).to.revertedWithCustomError(moveSystem, "NotEnoughEnergy");
+
+    // pause MoveSystem
+    tx = await moveSystem.connect(deployer).setPaused(true);
+    await tx.wait();
+
+    await expect(
+      moveSystem.connect(acc2).move({
+        raceID,
+        vx: 1, // decelerate on x axis
+        vy: 1, // accelerate on y axis
+      })
+    ).to.revertedWith("Pausable: paused");
+
+    await expect(
+        moveSystem.connect(acc2).initialize(acc2.address)
+      ).to.revertedWith("Initializable: contract is already initialized");
   });
 });

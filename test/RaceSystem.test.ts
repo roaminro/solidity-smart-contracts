@@ -113,7 +113,9 @@ describe("RaceSystem", function () {
   });
 
   it("Should not join a race", async function () {
-    const { raceSystem, acc1, acc2, acc3 } = await loadFixture(deployFixture);
+    const { deployer, raceSystem, acc1, acc2, acc3 } = await loadFixture(
+      deployFixture
+    );
 
     let tx = await raceSystem.connect(acc1).createRace({
       nbPlayers: 2,
@@ -156,5 +158,25 @@ describe("RaceSystem", function () {
         raceID,
       })
     ).to.revertedWithCustomError(raceSystem, "RaceAlreadyStarted");
+
+    // pause MoveSystem
+    tx = await raceSystem.connect(deployer).setPaused(true);
+    await tx.wait();
+
+    await expect(
+      raceSystem.connect(acc2).createRace({
+        nbPlayers: 2,
+      })
+    ).to.revertedWith("Pausable: paused");
+
+    await expect(
+      raceSystem.connect(acc2).joinRace({
+        raceID,
+      })
+    ).to.revertedWith("Pausable: paused");
+
+    await expect(
+      raceSystem.connect(acc2).initialize(acc2.address)
+    ).to.revertedWith("Initializable: contract is already initialized");
   });
 });
