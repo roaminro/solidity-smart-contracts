@@ -23,6 +23,14 @@ struct GetPlayerInfoParams {
     address player;
 }
 
+struct PlayerInfo{
+    int32 x;
+    int32 y;
+    int32 vx; 
+    int32 vy; 
+    uint32 energy;
+}
+
 enum RaceStatus {
     UNDEFINED,
     WAITING_FOR_PLAYERS,
@@ -39,5 +47,5 @@ interface IRaceSystem {
 
     function getPlayerInfo(
         GetPlayerInfoParams calldata params
-    ) external returns (int32 x, int32 y, int32 vx, int32 vy, uint32 energy);
+    ) external returns (PlayerInfo memory playerInfo);
 }

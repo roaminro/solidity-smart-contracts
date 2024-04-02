@@ -49,24 +49,19 @@ contract MoveSystem is IMoveSystem, GameRegistryConsumerUpgradeable {
             );
     }
 
-    function _getEnergyComponent()
-        internal
-        view
-        returns (EnergyComponent)
-    {
-        return
-            EnergyComponent(
-                _gameRegistry.getComponent(ENERGY_COMPONENT_ID)
-            );
+    function _getEnergyComponent() internal view returns (EnergyComponent) {
+        return EnergyComponent(_gameRegistry.getComponent(ENERGY_COMPONENT_ID));
     }
 
     function _getSpeed2DComponent() internal view returns (Speed2DComponent) {
         return
-            Speed2DComponent(_gameRegistry.getComponent(POSITION2D_COMPONENT_ID));
+            Speed2DComponent(
+                _gameRegistry.getComponent(SPEED2D_COMPONENT_ID)
+            );
     }
 
     function _getRaceComponent() internal view returns (RaceComponent) {
-        return RaceComponent(_gameRegistry.getSystem(RACE_COMPONENT_ID));
+        return RaceComponent(_gameRegistry.getComponent(RACE_COMPONENT_ID));
     }
 
     function move(MoveParams calldata params) external whenNotPaused {
@@ -111,12 +106,15 @@ contract MoveSystem is IMoveSystem, GameRegistryConsumerUpgradeable {
 
         uint32 timestamp = SafeCast.toUint32(block.timestamp);
         EnergyLibrary.regenerateEnergy(timestamp, energy);
-        energyComponent.setLayoutValue(racePlayerID, energy);
 
         // for now, a move requires 100% energy
         if (energy.balance < 100_00) {
             revert NotEnoughEnergy();
         }
+
+        // subtract energy needed for the move
+        energy.balance -= 100_00;
+        energyComponent.setLayoutValue(racePlayerID, energy);
 
         // update speed
         // current speed + 1 = acceleration

@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: UNKOWN
 pragma solidity ^0.8.9;
 
-import {ID as RACE_SYSTEM_ID, IRaceSystem, CreateRaceParams, JoinRaceParams, GetRaceParams, GetPlayerInfoParams, RaceStatus} from "./IRaceSystem.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {ID as RACE_SYSTEM_ID, IRaceSystem, CreateRaceParams, JoinRaceParams, GetRaceParams, GetPlayerInfoParams, RaceStatus, PlayerInfo} from "./IRaceSystem.sol";
 import {RaceComponent, ID as RACE_COMPONENT_ID, Layout as Race} from "../components/RaceComponent.sol";
 import {Position2DComponent, ID as POSITION2D_COMPONENT_ID, Layout as Position} from "../components/Position2DComponent.sol";
 import {Speed2DComponent, ID as SPEED2D_COMPONENT_ID} from "../components/Speed2DComponent.sol";
-import {EnergyComponent, ID as ENERGY_COMPONENT_ID} from "../components/EnergyComponent.sol";
+import {EnergyComponent, ID as ENERGY_COMPONENT_ID, Layout as Energy} from "../components/EnergyComponent.sol";
 import "../GameRegistryConsumerUpgradeable.sol";
 import {RaceLibrary} from "./RaceLibrary.sol";
+import {EnergyLibrary} from "../energy/EnergyLibrary.sol";
 
 /**
  * @title Contract for races
@@ -47,26 +49,13 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
             );
     }
 
-    function _getSpeed2DComponent()
-        internal
-        view
-        returns (Speed2DComponent)
-    {
+    function _getSpeed2DComponent() internal view returns (Speed2DComponent) {
         return
-            Speed2DComponent(
-                _gameRegistry.getComponent(SPEED2D_COMPONENT_ID)
-            );
+            Speed2DComponent(_gameRegistry.getComponent(SPEED2D_COMPONENT_ID));
     }
 
-    function _getEnergyComponent()
-        internal
-        view
-        returns (EnergyComponent)
-    {
-        return
-            EnergyComponent(
-                _gameRegistry.getComponent(ENERGY_COMPONENT_ID)
-            );
+    function _getEnergyComponent() internal view returns (EnergyComponent) {
+        return EnergyComponent(_gameRegistry.getComponent(ENERGY_COMPONENT_ID));
     }
 
     function createRace(
@@ -113,15 +102,16 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
             player
         );
 
-        Position memory position = _getPosition2DComponent().getLayoutValue(
-            racePlayerID
-        );
+        Position2DComponent positionComponent = _getPosition2DComponent();
 
         // check if player already joined race
-        // checking only x (or y) == 1 is enough to ensure the player has not joined yet
-        if (position.x == 1) {
+        if (positionComponent.has(racePlayerID)) {
             revert PlayerAlreadyJoined();
         }
+
+        Position memory position = positionComponent.getLayoutValue(
+            racePlayerID
+        );
 
         // TODO: use a better way to store default player values
 
@@ -129,15 +119,21 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
         position.x = 1;
         position.y = 1;
 
-        _getPosition2DComponent().setLayoutValue(racePlayerID, position);
+        positionComponent.setLayoutValue(racePlayerID, position);
 
         // start with a speed of 0
         _getSpeed2DComponent().setValue(racePlayerID, 0, 0);
 
-         // start with:
-         // - full energy (10000 = 100.00%)
-         // - 5 seconds energy regeneration time
-        _getEnergyComponent().setValue(racePlayerID, 100_00, 100_00, 0, 5 seconds);
+        // start with:
+        // - full energy (10000 = 100.00%)
+        // - 5 seconds energy regeneration time
+        _getEnergyComponent().setValue(
+            racePlayerID,
+            100_00,
+            100_00,
+            0,
+            5 seconds
+        );
 
         emit PlayerJoined(params.raceID, player);
 
@@ -154,20 +150,38 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
         _getRaceComponent().setLayoutValue(params.raceID, race);
     }
 
-    function getRace(GetRaceParams calldata params) external view returns (Race memory) {
+    function getRace(
+        GetRaceParams calldata params
+    ) external view returns (Race memory) {
         return _getRaceComponent().getLayoutValue(params.raceID);
     }
 
     function getPlayerInfo(
         GetPlayerInfoParams calldata params
-    ) external view returns (int32 x, int32 y, int32 vx, int32 vy, uint32 energy) {
+    ) external view returns (PlayerInfo memory playerInfo) {
         uint256 racePlayerID = RaceLibrary.getRacePlayerEntity(
             params.raceID,
             params.player
         );
 
-        (x, y) = _getPosition2DComponent().getValue(racePlayerID);
-        (vx, vy) = _getSpeed2DComponent().getValue(racePlayerID);
-        (energy,,,) = _getEnergyComponent().getValue(racePlayerID);
+        // position
+        (playerInfo.x, playerInfo.y) = _getPosition2DComponent().getValue(
+            racePlayerID
+        );
+
+        // speed
+        (playerInfo.vx, playerInfo.vy) = _getSpeed2DComponent().getValue(
+            racePlayerID
+        );
+
+        // energy
+        Energy memory energyLayout = _getEnergyComponent().getLayoutValue(
+            racePlayerID
+        );
+        EnergyLibrary.regenerateEnergy(
+            SafeCast.toUint32(block.timestamp),
+            energyLayout
+        );
+        playerInfo.energy = energyLayout.balance;
     }
 }
