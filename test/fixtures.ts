@@ -185,6 +185,30 @@ export async function deployFixture() {
   console.log("position2dComponentId", position2dComponentId.toString(16));
   console.log("------------------------------------------");
 
+  // deploy and register LineSegment2DComponent component
+  const LineSegment2DComponent = await hre.ethers.getContractFactory(
+    "LineSegment2DComponent",
+    deployer
+  );
+
+  const lineSegment2DComponent = await LineSegment2DComponent.deploy(
+    gameRegistryAddress
+  );
+  await lineSegment2DComponent.waitForDeployment();
+  const lineSegment2DComponentAddress = await lineSegment2DComponent.getAddress();
+  const lineSegment2DComponentId = await lineSegment2DComponent.getId();
+
+  // register LineSegment2DComponent with GameRegistry
+  tx = await gameRegistry
+    .connect(deployer)
+    .registerComponent(lineSegment2DComponentId, lineSegment2DComponentAddress);
+  await tx.wait();
+
+  console.log("LineSegment2DComponent deployed and registered");
+  console.log("lineSegment2DComponentAddress", lineSegment2DComponentAddress);
+  console.log("lineSegment2DComponentId", lineSegment2DComponentId.toString(16));
+  console.log("------------------------------------------");
+
   // unpause contracts
   tx = await gameRegistry.connect(deployer).setPaused(false);
   await tx.wait();
