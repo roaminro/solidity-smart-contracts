@@ -167,7 +167,10 @@ contract LineSegment2DComponent is BaseStorageComponentV2 {
             Layout memory s = LineSegment2DComponentStorage
                 .layout()
                 .entityIdToStruct[entity];
-            (x1, y1, x2, y2) = abi.decode(_getEncodedValues(s), (int32, int32, int32, int32));
+            (x1, y1, x2, y2) = abi.decode(
+                _getEncodedValues(s),
+                (int32, int32, int32, int32)
+            );
         }
     }
 
@@ -180,9 +183,9 @@ contract LineSegment2DComponent is BaseStorageComponentV2 {
         uint256 entity
     ) external view virtual returns (bytes[] memory values) {
         // Get the struct from storage
-        Layout storage s = LineSegment2DComponentStorage.layout().entityIdToStruct[
-            entity
-        ];
+        Layout storage s = LineSegment2DComponentStorage
+            .layout()
+            .entityIdToStruct[entity];
 
         // ABI Encode all fields of the struct and add to values array
         values = new bytes[](4);
@@ -200,9 +203,9 @@ contract LineSegment2DComponent is BaseStorageComponentV2 {
     function getBytes(
         uint256 entity
     ) external view returns (bytes memory value) {
-        Layout memory s = LineSegment2DComponentStorage.layout().entityIdToStruct[
-            entity
-        ];
+        Layout memory s = LineSegment2DComponentStorage
+            .layout()
+            .entityIdToStruct[entity];
         value = _getEncodedValues(s);
     }
 
@@ -215,10 +218,13 @@ contract LineSegment2DComponent is BaseStorageComponentV2 {
         uint256 entity,
         bytes calldata value
     ) external onlyRole(GAME_LOGIC_CONTRACT_ROLE) {
-        Layout memory s = LineSegment2DComponentStorage.layout().entityIdToStruct[
-            entity
-        ];
-        (s.x1, s.y1, s.x2, s.y2) = abi.decode(value, (int32, int32, int32, int32));
+        Layout memory s = LineSegment2DComponentStorage
+            .layout()
+            .entityIdToStruct[entity];
+        (s.x1, s.y1, s.x2, s.y2) = abi.decode(
+            value,
+            (int32, int32, int32, int32)
+        );
         _setValueToStorage(entity, s);
 
         // ABI Encode all native types of the struct
@@ -242,7 +248,10 @@ contract LineSegment2DComponent is BaseStorageComponentV2 {
             Layout memory s = LineSegment2DComponentStorage
                 .layout()
                 .entityIdToStruct[entities[i]];
-            (s.x1, s.y1, s.x2, s.y2) = abi.decode(values[i], (int32, int32, int32, int32));
+            (s.x1, s.y1, s.x2, s.y2) = abi.decode(
+                values[i],
+                (int32, int32, int32, int32)
+            );
             _setValueToStorage(entities[i], s);
         }
         // ABI Encode all native types of the struct
@@ -291,9 +300,9 @@ contract LineSegment2DComponent is BaseStorageComponentV2 {
     /** INTERNAL **/
 
     function _setValueToStorage(uint256 entity, Layout memory value) internal {
-        Layout storage s = LineSegment2DComponentStorage.layout().entityIdToStruct[
-            entity
-        ];
+        Layout storage s = LineSegment2DComponentStorage
+            .layout()
+            .entityIdToStruct[entity];
 
         s.x1 = value.x1;
         s.y1 = value.y1;
@@ -305,7 +314,10 @@ contract LineSegment2DComponent is BaseStorageComponentV2 {
         _setValueToStorage(entity, value);
 
         // ABI Encode all native types of the struct
-        _emitSetBytes(entity, abi.encode(value.x1, value.y1, value.x2, value.y2));
+        _emitSetBytes(
+            entity,
+            abi.encode(value.x1, value.y1, value.x2, value.y2)
+        );
     }
 
     function _getEncodedValues(

@@ -1,10 +1,11 @@
 import hre from "hardhat";
-import { GameRegistry, MoveSystem, RaceSystem } from "../typechain-types";
 import {
-  DEPLOYER_ROLE,
-  PAUSER_ROLE,
-  GAME_LOGIC_CONTRACT_ROLE,
-} from "./utils";
+  GameRegistry,
+  MoveSystem,
+  RaceSystem,
+  TrackSystem,
+} from "../typechain-types";
+import { DEPLOYER_ROLE, PAUSER_ROLE, GAME_LOGIC_CONTRACT_ROLE } from "./utils";
 
 export async function deployFixture() {
   const [deployer, acc1, acc2, acc3] = await hre.ethers.getSigners();
@@ -93,6 +94,37 @@ export async function deployFixture() {
   console.log("MoveSystem deployed and registered");
   console.log("moveSystemAddress", moveSystemAddress);
   console.log("moveSystemId", moveSystemId.toString(16));
+  console.log("------------------------------------------");
+
+  // deploy and register track system
+  const TrackSystem = await hre.ethers.getContractFactory(
+    "TrackSystem",
+    deployer
+  );
+
+  const trackSystem = (await hre.upgrades.deployProxy(TrackSystem, [
+    gameRegistryAddress,
+  ])) as unknown as TrackSystem;
+
+  await trackSystem.waitForDeployment();
+
+  const trackSystemAddress = await trackSystem.getAddress();
+  const trackSystemId = await trackSystem.getId();
+
+  tx = await gameRegistry
+    .connect(deployer)
+    .registerSystem(trackSystemId, trackSystemAddress);
+  await tx.wait();
+
+  // set GAME_LOGIC_CONTRACT_ROLE for TrackSystem contract
+  tx = await gameRegistry
+    .connect(deployer)
+    .grantRole(GAME_LOGIC_CONTRACT_ROLE, trackSystemAddress);
+  await tx.wait();
+
+  console.log("TrackSystem deployed and registered");
+  console.log("trackSystemAddress", trackSystemAddress);
+  console.log("trackSystemId", trackSystemId.toString(16));
   console.log("------------------------------------------");
 
   // deploy and register RaceComponent component
@@ -195,7 +227,8 @@ export async function deployFixture() {
     gameRegistryAddress
   );
   await lineSegment2DComponent.waitForDeployment();
-  const lineSegment2DComponentAddress = await lineSegment2DComponent.getAddress();
+  const lineSegment2DComponentAddress =
+    await lineSegment2DComponent.getAddress();
   const lineSegment2DComponentId = await lineSegment2DComponent.getId();
 
   // register LineSegment2DComponent with GameRegistry
@@ -206,7 +239,10 @@ export async function deployFixture() {
 
   console.log("LineSegment2DComponent deployed and registered");
   console.log("lineSegment2DComponentAddress", lineSegment2DComponentAddress);
-  console.log("lineSegment2DComponentId", lineSegment2DComponentId.toString(16));
+  console.log(
+    "lineSegment2DComponentId",
+    lineSegment2DComponentId.toString(16)
+  );
   console.log("------------------------------------------");
 
   // deploy and register CheckpointComponent component
@@ -239,9 +275,7 @@ export async function deployFixture() {
     deployer
   );
 
-  const trackComponent = await TrackComponent.deploy(
-    gameRegistryAddress
-  );
+  const trackComponent = await TrackComponent.deploy(gameRegistryAddress);
   await trackComponent.waitForDeployment();
   const trackComponentAddress = await trackComponent.getAddress();
   const trackComponentId = await trackComponent.getId();
