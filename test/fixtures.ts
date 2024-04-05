@@ -218,7 +218,7 @@ export async function deployFixture() {
   const checkpointComponent = await CheckpointComponent.deploy(
     gameRegistryAddress
   );
-  await lineSegment2DComponent.waitForDeployment();
+  await checkpointComponent.waitForDeployment();
   const checkpointComponentAddress = await checkpointComponent.getAddress();
   const checkpointComponentId = await checkpointComponent.getId();
 
@@ -231,6 +231,30 @@ export async function deployFixture() {
   console.log("CheckpointComponent deployed and registered");
   console.log("checkpointComponentAddress", checkpointComponentAddress);
   console.log("checkpointComponentId", checkpointComponentId.toString(16));
+  console.log("------------------------------------------");
+
+  // deploy and register TrackComponent component
+  const TrackComponent = await hre.ethers.getContractFactory(
+    "TrackComponent",
+    deployer
+  );
+
+  const trackComponent = await TrackComponent.deploy(
+    gameRegistryAddress
+  );
+  await trackComponent.waitForDeployment();
+  const trackComponentAddress = await trackComponent.getAddress();
+  const trackComponentId = await trackComponent.getId();
+
+  // register TrackComponent with GameRegistry
+  tx = await gameRegistry
+    .connect(deployer)
+    .registerComponent(trackComponentId, trackComponentAddress);
+  await tx.wait();
+
+  console.log("TrackComponent deployed and registered");
+  console.log("trackComponentAddress", trackComponentAddress);
+  console.log("trackComponentId", trackComponentId.toString(16));
   console.log("------------------------------------------");
 
   // unpause contracts
