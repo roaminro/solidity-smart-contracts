@@ -37,7 +37,7 @@ library CheckpointComponentStorage {
 
 /**
  * @title CheckpointComponent
- * @dev Line segment 2D Component
+ * @dev checkpoint Component
  */
 contract CheckpointComponent is BaseStorageComponentV2 {
     /** SETUP **/
@@ -58,8 +58,8 @@ contract CheckpointComponent is BaseStorageComponentV2 {
         override
         returns (string[] memory keys, TypesLibrary.SchemaValue[] memory values)
     {
-        keys = new string[](4);
-        values = new TypesLibrary.SchemaValue[](4);
+        keys = new string[](1);
+        values = new TypesLibrary.SchemaValue[](1);
 
         // line entities
         keys[0] = "lineEntities";
