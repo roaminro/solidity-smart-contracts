@@ -9,11 +9,12 @@ struct Checkpoint {
     LineSegment[] lines;
 }
 
-struct CreateTrackParams {
+struct Track {
     LineSegment[] lines;
     Checkpoint[] checkpoints;
 }
 
 interface ITrackSystem {
-    function createTrack(CreateTrackParams calldata params) external;
+    function createTrack(Track calldata track) external;
+    function getTrack(uint256 trackID) external view returns (Track memory);
 }

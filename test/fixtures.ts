@@ -5,10 +5,15 @@ import {
   RaceSystem,
   TrackSystem,
 } from "../typechain-types";
-import { DEPLOYER_ROLE, PAUSER_ROLE, GAME_LOGIC_CONTRACT_ROLE } from "./utils";
+import {
+  DEPLOYER_ROLE,
+  PAUSER_ROLE,
+  GAME_LOGIC_CONTRACT_ROLE,
+  MANAGER_ROLE,
+} from "./utils";
 
 export async function deployFixture() {
-  const [deployer, acc1, acc2, acc3] = await hre.ethers.getSigners();
+  const [deployer, manager, acc1, acc2, acc3] = await hre.ethers.getSigners();
 
   // setup game registry
   const GameRegistry = await hre.ethers.getContractFactory(
@@ -291,6 +296,11 @@ export async function deployFixture() {
   console.log("trackComponentId", trackComponentId.toString(16));
   console.log("------------------------------------------");
 
+  // set additional roles
+  // set MANAGER_ROLE for manager account
+  tx = await gameRegistry.connect(deployer).grantRole(MANAGER_ROLE, manager);
+  await tx.wait();
+
   // unpause contracts
   tx = await gameRegistry.connect(deployer).setPaused(false);
   await tx.wait();
@@ -301,5 +311,15 @@ export async function deployFixture() {
   tx = await moveSystem.connect(deployer).setPaused(false);
   await tx.wait();
 
-  return { raceSystem, moveSystem, gameRegistry, deployer, acc1, acc2, acc3 };
+  return {
+    raceSystem,
+    moveSystem,
+    trackSystem,
+    gameRegistry,
+    deployer,
+    manager,
+    acc1,
+    acc2,
+    acc3,
+  };
 }

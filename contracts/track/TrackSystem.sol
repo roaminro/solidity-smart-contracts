@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNKOWN
 pragma solidity ^0.8.9;
 
-import {ID as TRACK_SYSTEM_ID, ITrackSystem, CreateTrackParams, LineSegment, Checkpoint} from "./ITrackSystem.sol";
-import {TrackComponent, ID as TRACK_COMPONENT_ID, Layout as Track} from "../components/TrackComponent.sol";
-import {CheckpointComponent, ID as CHECKPOINT_COMPONENT_ID} from "../components/CheckpointComponent.sol";
+import {ID as TRACK_SYSTEM_ID, ITrackSystem, Track, LineSegment, Checkpoint} from "./ITrackSystem.sol";
+import {TrackComponent, ID as TRACK_COMPONENT_ID, Layout as TrackLayout} from "../components/TrackComponent.sol";
+import {CheckpointComponent, ID as CHECKPOINT_COMPONENT_ID, Layout as CheckpointLayout} from "../components/CheckpointComponent.sol";
 import {LineSegment2DComponent, ID as LINE_SEGMENT2D_COMPONENT_ID} from "../components/LineSegment2DComponent.sol";
 import "../GameRegistryConsumerUpgradeable.sol";
 import {TrackLibrary} from "./TrackLibrary.sol";
@@ -122,18 +122,16 @@ contract TrackSystem is ITrackSystem, GameRegistryConsumerUpgradeable {
         return checkpointEntities;
     }
 
-    function createTrack(
-        CreateTrackParams calldata params
-    ) external onlyRole(MANAGER_ROLE) {
+    function createTrack(Track calldata track) external onlyRole(MANAGER_ROLE) {
         uint256 trackID = _gameRegistry.generateGUID();
 
         // process the lines
-        uint256[] memory lineEntities = _storeLineSegmentEntities(params.lines);
+        uint256[] memory lineEntities = _storeLineSegmentEntities(track.lines);
 
         // process the checkpoints
         uint256[] memory checkpointEntities = _storeCheckpointEntities(
             trackID,
-            params.checkpoints
+            track.checkpoints
         );
 
         // save the track
@@ -144,5 +142,58 @@ contract TrackSystem is ITrackSystem, GameRegistryConsumerUpgradeable {
         );
 
         emit TrackCreated(trackID);
+    }
+
+    function _getLineSegments(uint256[] memory lineSegmentEntities) internal view returns (LineSegment[] memory) {
+        LineSegment[] memory lineSegments = new LineSegment[](lineSegmentEntities.length);
+
+        LineSegment2DComponent lineSegment2DComponent = _getLineSegment2DComponent();
+
+        for (uint i; i < lineSegmentEntities.length;) {
+            lineSegments[i] = lineSegment2DComponent.getLayoutValue(lineSegmentEntities[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return lineSegments;
+    }
+
+    function _getTrackCheckpoints(uint256 trackID, uint256[] memory checkpointEntities) internal view returns (Checkpoint[] memory) {
+        Checkpoint[] memory checkpoints = new Checkpoint[](checkpointEntities.length);
+
+        CheckpointComponent checkpointComponent = _getCheckpointComponent();
+
+        CheckpointLayout memory checkpointLayout;
+        for (uint i; i < checkpointEntities.length;) {
+            checkpointLayout = checkpointComponent.getLayoutValue(TrackLibrary.getTrackCheckpointEntity(
+                trackID,
+                i + 1
+            ));
+
+            checkpoints[i] = Checkpoint({
+                lines: _getLineSegments(checkpointLayout.lineEntities)
+            });
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return checkpoints;
+    }
+
+    function getTrack(
+        uint256 trackID
+    ) external view returns (Track memory) {
+        TrackComponent trackComponent = _getTrackComponent();
+
+        TrackLayout memory track = trackComponent.getLayoutValue(trackID);
+
+       return Track({
+        lines: _getLineSegments(track.lineEntities),
+        checkpoints: _getTrackCheckpoints(trackID, track.checkpointEntities)
+       });
     }
 }

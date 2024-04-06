@@ -5,6 +5,11 @@ export const DEPLOYER_ROLE = hre.ethers.solidityPackedKeccak256(
   ["DEPLOYER_ROLE"]
 );
 
+export const MANAGER_ROLE = hre.ethers.solidityPackedKeccak256(
+  ["string"],
+  ["MANAGER_ROLE"]
+);
+
 export const PAUSER_ROLE = hre.ethers.solidityPackedKeccak256(
   ["string"],
   ["PAUSER_ROLE"]
