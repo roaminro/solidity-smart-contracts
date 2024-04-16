@@ -2,16 +2,14 @@ import {
   time,
   loadFixture,
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import { EventLog } from "ethers";
-import { RaceStatus } from "./utils";
-import { deployFixture } from "./fixtures";
+import { commonFixtures } from "./fixtures/common";
 
 describe("MoveSystem", function () {
   it("Should move a player", async function () {
     const { raceSystem, moveSystem, acc1, acc2 } = await loadFixture(
-      deployFixture
+      commonFixtures
     );
 
     // create race
@@ -144,7 +142,7 @@ describe("MoveSystem", function () {
 
   it("Should not move a player", async function () {
     const { deployer, raceSystem, moveSystem, acc1, acc2, acc3 } =
-      await loadFixture(deployFixture);
+      await loadFixture(commonFixtures);
 
     // create race
     let tx = await raceSystem.connect(acc1).createRace({

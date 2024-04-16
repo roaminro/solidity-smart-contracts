@@ -4,15 +4,17 @@ import {
   MoveSystem,
   RaceSystem,
   TrackSystem,
-} from "../typechain-types";
+} from "../../typechain-types";
 import {
   DEPLOYER_ROLE,
   PAUSER_ROLE,
   GAME_LOGIC_CONTRACT_ROLE,
   MANAGER_ROLE,
-} from "./utils";
+  TRACK,
+} from "../utils";
+import { EventLog } from "ethers";
 
-export async function deployFixture() {
+export async function commonFixtures() {
   const [deployer, manager, acc1, acc2, acc3] = await hre.ethers.getSigners();
 
   // setup game registry
@@ -311,6 +313,17 @@ export async function deployFixture() {
   tx = await moveSystem.connect(deployer).setPaused(false);
   await tx.wait();
 
+  // initialize default track
+  tx = await trackSystem.connect(manager).createTrack(TRACK);
+
+  const receipt = await tx.wait();
+
+  const event = receipt?.logs.find(
+    (log) => log instanceof EventLog && log.eventName === "TrackCreated"
+  ) as EventLog;
+
+  const [defaultTrackID] = event.args;
+
   return {
     raceSystem,
     moveSystem,
@@ -318,6 +331,7 @@ export async function deployFixture() {
     gameRegistry,
     deployer,
     manager,
+    defaultTrackID,
     acc1,
     acc2,
     acc3,

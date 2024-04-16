@@ -3,11 +3,11 @@ import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import { EventLog } from "ethers";
 import { RaceStatus } from "./utils";
-import { deployFixture } from "./fixtures";
+import { commonFixtures } from "./fixtures/common";
 
 describe("RaceSystem", function () {
   it("Should create a race", async function () {
-    const { raceSystem, acc1 } = await loadFixture(deployFixture);
+    const { raceSystem, acc1 } = await loadFixture(commonFixtures);
 
     let tx = await raceSystem.connect(acc1).createRace({
       nbPlayers: 3,
@@ -39,7 +39,7 @@ describe("RaceSystem", function () {
   });
 
   it("Should join and start a race", async function () {
-    const { raceSystem, acc1, acc2 } = await loadFixture(deployFixture);
+    const { raceSystem, acc1, acc2 } = await loadFixture(commonFixtures);
 
     let tx = await raceSystem.connect(acc1).createRace({
       nbPlayers: 2,
@@ -114,7 +114,7 @@ describe("RaceSystem", function () {
 
   it("Should not join a race", async function () {
     const { deployer, raceSystem, acc1, acc2, acc3 } = await loadFixture(
-      deployFixture
+      commonFixtures
     );
 
     let tx = await raceSystem.connect(acc1).createRace({
