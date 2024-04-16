@@ -7,6 +7,7 @@ import {RaceComponent, ID as RACE_COMPONENT_ID, Layout as Race} from "../compone
 import {Position2DComponent, ID as POSITION2D_COMPONENT_ID, Layout as Position} from "../components/Position2DComponent.sol";
 import {Speed2DComponent, ID as SPEED2D_COMPONENT_ID} from "../components/Speed2DComponent.sol";
 import {EnergyComponent, ID as ENERGY_COMPONENT_ID, Layout as Energy} from "../components/EnergyComponent.sol";
+import {TrackComponent, ID as TRACK_COMPONENT_ID} from "../components/TrackComponent.sol";
 import "../GameRegistryConsumerUpgradeable.sol";
 import {RaceLibrary} from "./RaceLibrary.sol";
 import {EnergyLibrary} from "../energy/EnergyLibrary.sol";
@@ -22,6 +23,8 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
 
     /** ERRORS **/
     error RaceNotFound();
+    error TrackNotFound();
+    error InvalidNumberPlayers();
     error RaceAlreadyStarted();
     error PlayerAlreadyJoined();
 
@@ -58,12 +61,26 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
         return EnergyComponent(_gameRegistry.getComponent(ENERGY_COMPONENT_ID));
     }
 
+    function _getTrackComponent() internal view returns (TrackComponent) {
+        return TrackComponent(_gameRegistry.getComponent(TRACK_COMPONENT_ID));   
+    }
+
     function createRace(
         CreateRaceParams calldata params
     ) external whenNotPaused {
         address creator = _getPlayerAccount(_msgSender());
 
         // TODO: add requirements to create a race
+
+        // must require at least 2 players
+        if (params.nbPlayers < 2) {
+            revert InvalidNumberPlayers();
+        }
+
+        // check if track exists
+        if (!_getTrackComponent().has(params.trackID)) {
+            revert TrackNotFound();
+        }
 
         uint256 raceID = _gameRegistry.generateGUID();
 

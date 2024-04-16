@@ -7,9 +7,12 @@ import { commonFixtures } from "./fixtures/common";
 
 describe("RaceSystem", function () {
   it("Should create a race", async function () {
-    const { raceSystem, acc1 } = await loadFixture(commonFixtures);
+    const { raceSystem, acc1, defaultTrackID } = await loadFixture(
+      commonFixtures
+    );
 
     let tx = await raceSystem.connect(acc1).createRace({
+      trackID: defaultTrackID,
       nbPlayers: 3,
     });
 
@@ -39,9 +42,12 @@ describe("RaceSystem", function () {
   });
 
   it("Should join and start a race", async function () {
-    const { raceSystem, acc1, acc2 } = await loadFixture(commonFixtures);
+    const { raceSystem, acc1, acc2, defaultTrackID } = await loadFixture(
+      commonFixtures
+    );
 
     let tx = await raceSystem.connect(acc1).createRace({
+      trackID: defaultTrackID,
       nbPlayers: 2,
     });
 
@@ -113,11 +119,25 @@ describe("RaceSystem", function () {
   });
 
   it("Should not join a race", async function () {
-    const { deployer, raceSystem, acc1, acc2, acc3 } = await loadFixture(
-      commonFixtures
-    );
+    const { deployer, raceSystem, defaultTrackID, acc1, acc2, acc3 } =
+      await loadFixture(commonFixtures);
+
+    await expect(
+      raceSystem.connect(acc1).createRace({
+        trackID: 3,
+        nbPlayers: 2,
+      })
+    ).to.revertedWithCustomError(raceSystem, "TrackNotFound");
+
+    await expect(
+      raceSystem.connect(acc1).createRace({
+        trackID: defaultTrackID,
+        nbPlayers: 1,
+      })
+    ).to.revertedWithCustomError(raceSystem, "InvalidNumberPlayers");
 
     let tx = await raceSystem.connect(acc1).createRace({
+      trackID: defaultTrackID,
       nbPlayers: 2,
     });
 
@@ -165,6 +185,7 @@ describe("RaceSystem", function () {
 
     await expect(
       raceSystem.connect(acc2).createRace({
+        trackID: defaultTrackID,
         nbPlayers: 2,
       })
     ).to.revertedWith("Pausable: paused");

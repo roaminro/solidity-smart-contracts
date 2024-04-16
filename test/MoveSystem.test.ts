@@ -8,12 +8,12 @@ import { commonFixtures } from "./fixtures/common";
 
 describe("MoveSystem", function () {
   it("Should move a player", async function () {
-    const { raceSystem, moveSystem, acc1, acc2 } = await loadFixture(
-      commonFixtures
-    );
+    const { raceSystem, moveSystem, defaultTrackID, acc1, acc2 } =
+      await loadFixture(commonFixtures);
 
     // create race
     let tx = await raceSystem.connect(acc1).createRace({
+      trackID: defaultTrackID,
       nbPlayers: 2,
     });
 
@@ -141,11 +141,19 @@ describe("MoveSystem", function () {
   });
 
   it("Should not move a player", async function () {
-    const { deployer, raceSystem, moveSystem, acc1, acc2, acc3 } =
-      await loadFixture(commonFixtures);
+    const {
+      deployer,
+      raceSystem,
+      moveSystem,
+      defaultTrackID,
+      acc1,
+      acc2,
+      acc3,
+    } = await loadFixture(commonFixtures);
 
     // create race
     let tx = await raceSystem.connect(acc1).createRace({
+      trackID: defaultTrackID,
       nbPlayers: 2,
     });
 
@@ -256,7 +264,7 @@ describe("MoveSystem", function () {
     ).to.revertedWith("Pausable: paused");
 
     await expect(
-        moveSystem.connect(acc2).initialize(acc2.address)
-      ).to.revertedWith("Initializable: contract is already initialized");
+      moveSystem.connect(acc2).initialize(acc2.address)
+    ).to.revertedWith("Initializable: contract is already initialized");
   });
 });

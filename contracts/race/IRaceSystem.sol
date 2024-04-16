@@ -7,6 +7,7 @@ import {Layout as Race} from "../components/RaceComponent.sol";
 uint256 constant ID = uint256(keccak256("game.racing.racesystem.v1"));
 
 struct CreateRaceParams {
+    uint256 trackID;
     uint8 nbPlayers;
 }
 
