@@ -8,6 +8,7 @@ import {Position2DComponent, ID as POSITION2D_COMPONENT_ID, Layout as Position} 
 import {Speed2DComponent, ID as SPEED2D_COMPONENT_ID} from "../components/Speed2DComponent.sol";
 import {EnergyComponent, ID as ENERGY_COMPONENT_ID, Layout as Energy} from "../components/EnergyComponent.sol";
 import {TrackComponent, ID as TRACK_COMPONENT_ID} from "../components/TrackComponent.sol";
+import {TurnComponent, ID as TURN_COMPONENT_ID} from "../components/TurnComponent.sol";
 import "../GameRegistryConsumerUpgradeable.sol";
 import {RaceLibrary} from "./RaceLibrary.sol";
 import {EnergyLibrary} from "../energy/EnergyLibrary.sol";
@@ -62,7 +63,11 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
     }
 
     function _getTrackComponent() internal view returns (TrackComponent) {
-        return TrackComponent(_gameRegistry.getComponent(TRACK_COMPONENT_ID));   
+        return TrackComponent(_gameRegistry.getComponent(TRACK_COMPONENT_ID));
+    }
+
+    function _getTurnComponent() internal view returns (TurnComponent) {
+        return TurnComponent(_gameRegistry.getComponent(TURN_COMPONENT_ID));
     }
 
     function createRace(
@@ -200,5 +205,8 @@ contract RaceSystem is IRaceSystem, GameRegistryConsumerUpgradeable {
             energyLayout
         );
         playerInfo.energy = energyLayout.balance;
+
+        // turn
+        (playerInfo.turn) = _getTurnComponent().getValue(racePlayerID);
     }
 }

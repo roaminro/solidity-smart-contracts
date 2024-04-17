@@ -7,6 +7,7 @@ import {Position2DComponent, ID as POSITION2D_COMPONENT_ID, Layout as Position} 
 import {Speed2DComponent, ID as SPEED2D_COMPONENT_ID, Layout as Speed} from "../components/Speed2DComponent.sol";
 import {RaceComponent, ID as RACE_COMPONENT_ID, Layout as Race} from "../components/RaceComponent.sol";
 import {EnergyComponent, ID as ENERGY_COMPONENT_ID, Layout as Energy} from "../components/EnergyComponent.sol";
+import {TurnComponent, ID as TURN_COMPONENT_ID, Layout as Turn} from "../components/TurnComponent.sol";
 import {RaceStatus} from "../race/IRaceSystem.sol";
 import {MANAGER_ROLE} from "../Constants.sol";
 import {IMoveSystem, MoveParams} from "./IMoveSystem.sol";
@@ -62,6 +63,10 @@ contract MoveSystem is IMoveSystem, GameRegistryConsumerUpgradeable {
 
     function _getRaceComponent() internal view returns (RaceComponent) {
         return RaceComponent(_gameRegistry.getComponent(RACE_COMPONENT_ID));
+    }
+
+    function _getTurnComponent() internal view returns (TurnComponent) {
+        return TurnComponent(_gameRegistry.getComponent(TURN_COMPONENT_ID));
     }
 
     function move(MoveParams calldata params) external whenNotPaused {
@@ -132,6 +137,13 @@ contract MoveSystem is IMoveSystem, GameRegistryConsumerUpgradeable {
         position.y += speed.vy;
 
         positionComponent.setLayoutValue(racePlayerID, position);
+
+        // increment turn
+        TurnComponent turnComponent = _getTurnComponent();
+        (uint32 turn) = turnComponent.getValue(racePlayerID);
+
+        ++turn;
+        turnComponent.setValue(racePlayerID, turn);
 
         emit PlayerMoved(params.raceID, player);
     }

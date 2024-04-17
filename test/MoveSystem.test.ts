@@ -50,6 +50,7 @@ describe("MoveSystem", function () {
     expect(playerInfo.vx).to.eq(0);
     expect(playerInfo.vy).to.eq(0);
     expect(playerInfo.energy).to.eq(100_00);
+    expect(playerInfo.turn).to.eq(0);
 
     // race is now started, move player 1
     tx = await moveSystem.connect(acc1).move({
@@ -71,6 +72,7 @@ describe("MoveSystem", function () {
     expect(playerInfo.vx).to.eq(1);
     expect(playerInfo.vy).to.eq(1);
     expect(playerInfo.energy).to.eq(0);
+    expect(playerInfo.turn).to.eq(1);
 
     // increase block time to regenerate energy
     await time.increase(2);
@@ -118,6 +120,7 @@ describe("MoveSystem", function () {
     expect(playerInfo.vx).to.eq(0);
     expect(playerInfo.vy).to.eq(2);
     expect(playerInfo.energy).to.eq(0);
+    expect(playerInfo.turn).to.eq(2);
 
     tx = await moveSystem.connect(acc2).move({
       raceID,
@@ -138,6 +141,7 @@ describe("MoveSystem", function () {
     expect(playerInfo.vx).to.eq(1);
     expect(playerInfo.vy).to.eq(1);
     expect(playerInfo.energy).to.eq(0);
+    expect(playerInfo.turn).to.eq(1);
   });
 
   it("Should not move a player", async function () {

@@ -224,6 +224,30 @@ export async function commonFixtures() {
   console.log("position2dComponentId", position2dComponentId.toString(16));
   console.log("------------------------------------------");
 
+  // deploy and register TurnComponent component
+  const TurnComponent = await hre.ethers.getContractFactory(
+    "TurnComponent",
+    deployer
+  );
+
+  const turnComponent = await TurnComponent.deploy(
+    gameRegistryAddress
+  );
+  await turnComponent.waitForDeployment();
+  const turnComponentAddress = await turnComponent.getAddress();
+  const turnComponentId = await turnComponent.getId();
+
+  // register TurnComponent with GameRegistry
+  tx = await gameRegistry
+    .connect(deployer)
+    .registerComponent(turnComponentId, turnComponentAddress);
+  await tx.wait();
+
+  console.log("TurnComponent deployed and registered");
+  console.log("turnComponentAddress", turnComponentAddress);
+  console.log("turnComponentId", turnComponentId.toString(16));
+  console.log("------------------------------------------");
+
   // deploy and register LineSegment2DComponent component
   const LineSegment2DComponent = await hre.ethers.getContractFactory(
     "LineSegment2DComponent",

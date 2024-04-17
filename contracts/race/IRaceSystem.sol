@@ -30,6 +30,7 @@ struct PlayerInfo{
     int32 vx; 
     int32 vy; 
     uint32 energy;
+    uint32 turn;
 }
 
 enum RaceStatus {
